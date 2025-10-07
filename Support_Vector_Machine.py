@@ -17,13 +17,6 @@ print("Loading datasets...")
 train_data = pd.read_csv(training_file)
 test_data = pd.read_csv(test_file)
 
-# Separate features and target
-X_train = train_data.drop('fire', axis=1)
-y_train = train_data['fire']
-X_test = test_data.drop('fire', axis=1)
-y_test = test_data['fire']
-
-
 ####################
 ## PRE-PROCESSING ##
 ####################
@@ -31,6 +24,12 @@ y_test = test_data['fire']
 # Remove any rows with missing values
 train_data = train_data.dropna()
 test_data = test_data.dropna()
+
+# Separate features and target
+X_train = train_data.drop('fire', axis=1)
+y_train = train_data['fire']
+X_test = test_data.drop('fire', axis=1)
+y_test = test_data['fire']
 
 # Scale features
 scaler = StandardScaler()
@@ -47,18 +46,8 @@ print("\nTraining SVM model with default hyperparameters...")
 default_svm = SVC()
 default_svm.fit(X_train_scaled, y_train)
 
-print("\n**********Results of Default Model**********")
-
 y_train_pred_default = default_svm.predict(X_train_scaled)
 y_test_pred_default = default_svm.predict(X_test_scaled)
-
-print(f"\nDefault Hyperparameters: C={default_svm.C}, gamma={default_svm.gamma}")
-print(f"\nTraining Set Accuracy: {accuracy_score(y_train, y_train_pred_default):.4f}")
-print(f"Test Set Accuracy: {accuracy_score(y_test, y_test_pred_default):.4f}")
-
-print("Confusion Matrix for test set:")
-print(confusion_matrix(y_test, y_test_pred_default))
-
 
 # Find the best hyperparameters
 print("\n**********Training SVM model with custom hyperparameters**********")
@@ -99,13 +88,28 @@ for C in c_values:
             best_model = custom_svm
 
 
-print("\n**********Results of Best Model**********")
-y_train_pred_best = best_model.predict(X_train_scaled)
-y_test_pred_best = best_model.predict(X_test_scaled)
+####################
+###   RESULTS    ###
+####################
+
+print("\n**********Results of Default Model**********")
+
+print(f"\nDefault Hyperparameters: C={default_svm.C}, gamma={default_svm.gamma}")
+print(f"\nTraining Set Accuracy: {accuracy_score(y_train, y_train_pred_default):.4f}")
+print(f"Test Set Accuracy: {accuracy_score(y_test, y_test_pred_default):.4f}")
+
+print("Confusion Matrix for test set:")
+print(confusion_matrix(y_test, y_test_pred_default))
+
+
+
+print("\n**********Results of Tuned Model**********")
+y_train_pred_tuned = best_model.predict(X_train_scaled)
+y_test_pred_tuned = best_model.predict(X_test_scaled)
 
 print(f"\nBest Hyperparameters: C={best_params[0]}, gamma={best_params[1]}")
-print(f"\nTraining Set Accuracy: {accuracy_score(y_train, y_train_pred_best):.4f}")
-print("\nHighest Test Set Accuracy: {:.4f}".format(accuracy_score(y_test, y_test_pred_best)))
+print(f"\nTraining Set Accuracy: {accuracy_score(y_train, y_train_pred_tuned):.4f}")
+print("\nHighest Test Set Accuracy: {:.4f}".format(accuracy_score(y_test, y_test_pred_tuned)))
 
 print("Test set Confusion Matrix:")
-print(confusion_matrix(y_test, y_test_pred_best))
+print(confusion_matrix(y_test, y_test_pred_tuned))
