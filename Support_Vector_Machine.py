@@ -1,12 +1,21 @@
+"""
+Support Vector Machine Classifier for Predicting Wildfires
+
+This script implements a Support Vector Machine classifier to predict the occurrence of wildfires.
+The model is trained on the wildfires_training.csv dataset and evaluated on the wildfires_test.csv dataset.
+It first runs the model with its default parameters and then tunes two of the hyperparameters to find the best combination.
+
+Author: Milo Blake
+"""
+
 import pandas as pd
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix
 
-####################
-###    SETUP     ###
-####################
+
+# -----SETUP-----
 
 # File paths
 test_file = 'Datasets/wildfires_test.csv'
@@ -17,13 +26,29 @@ print("Loading datasets...")
 train_data = pd.read_csv(training_file)
 test_data = pd.read_csv(test_file)
 
-####################
-## PRE-PROCESSING ##
-####################
+
+# ----- PRE-PROCESSING-----
 
 # Remove any rows with missing values
 train_data = train_data.dropna()
 test_data = test_data.dropna()
+
+# Feature Engineering
+# Temp humidity - combines temp and humidity
+train_data['temp_and_humidity'] = train_data['temp'] * (1 - train_data['humidity']/100)
+test_data['temp_and_humidity'] = test_data['temp'] * (1 - test_data['humidity']/100)
+
+# Drought Buildup Index - combines drought code and buildup index
+train_data['drought_and_buildup_index'] = train_data['drought_code'] * train_data['buildup_index']
+test_data['drought_and_buildup_index'] = test_data['drought_code'] * test_data['buildup_index']
+
+# Wind-Drought Risk - interaction between wind and drought conditions
+train_data['wind_and_drought'] = train_data['wind_speed'] * train_data['drought_code']
+test_data['wind_and_drought'] = test_data['wind_speed'] * test_data['drought_code']
+
+# Dry hot - low rainfall with high temp
+train_data['temp_and_dry'] = train_data['temp'] / (train_data['rainfall'] + 1) # add 1 to avoid dividing by zero
+test_data['temp_and_dry'] = test_data['temp'] / (test_data['rainfall'] + 1)
 
 # Separate features and target
 X_train = train_data.drop('fire', axis=1)
@@ -37,9 +62,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 
-####################
-## MODEL TRAINING ##
-####################
+# -----MODEL TRAINING-----
 
 # Run with sklearn's default SVC hyperparameters
 print("\nTraining SVM model with default hyperparameters...")
@@ -80,23 +103,23 @@ for C in c_values:
             'test_acc': test_acc
         })
 
-        print(f"C={C:>5}, gamma={str(gamma):>5} | Training set Accuracy: {train_acc:.4f} | Test set Accuracy: {test_acc:.4f}")
-
+        print(f"C={C:>5}, gamma={str(gamma):>5} | "
+                    f"Training Accuracy: {train_acc:.4f} | "
+                    f"Test Accuracy: {test_acc:.4f}")
+        
         if test_acc > highest_accuracy:
             highest_accuracy = test_acc
             best_params = (C, gamma)
             best_model = custom_svm
 
 
-####################
-###   RESULTS    ###
-####################
+# -----RESULTS-----
 
 print("\n**********Results of Default Model**********")
 
 print(f"\nDefault Hyperparameters: C={default_svm.C}, gamma={default_svm.gamma}")
 print(f"\nTraining Set Accuracy: {accuracy_score(y_train, y_train_pred_default):.4f}")
-print(f"Test Set Accuracy: {accuracy_score(y_test, y_test_pred_default):.4f}")
+print(f"\nTest Set Accuracy: {accuracy_score(y_test, y_test_pred_default):.4f}")
 
 print("Confusion Matrix for test set:")
 print(confusion_matrix(y_test, y_test_pred_default))
